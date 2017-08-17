@@ -37,12 +37,12 @@
 
 (defn- create-solver ^ISolver [clauses]
   (let [^ISolver solver (SolverFactory/newDefault),
-        {constraints true, clauses false} (group-by constraint? clauses)        
-        max-var (max (transduce (comp cat (map abs)) max 1 clauses)  
+        {constraints true, clauses false} (group-by constraint? clauses)
+        max-var (max (transduce (comp cat (map abs)) max 1 clauses)
                      (transduce (comp (map :literals) cat (map abs)) max 1 constraints))]
     (.newVar solver max-var)
     (.setExpectedNumberOfClauses solver (count clauses))
-    (try 
+    (try
       (dotimes [i (count clauses)]
         (.addClause solver (vec-int (clauses i))))
       (dotimes [i (count constraints)]
@@ -77,7 +77,7 @@
      :reduced-db (.reduceddb stats),
      :update-lbd (.updateLBD stats),
      :imported-units (.importedUnits stats)}))
-  
+
 
 (s/def ::constraint constraint?)
 (s/def ::numeric-clause (s/coll-of (s/and int? #(not= % 0))
@@ -128,13 +128,13 @@
            _ (when timeout (.setTimeoutMs solver timeout))
            solution-iterator (fn [_]
                                (when-let [next-solution (find-next-model iterator timeout-atom)]
-                                 (with-meta (vec next-solution) (stats-map solver))))]
+                                 (vec next-solution)))]
      :when-let [first-solution (solution-iterator nil)]
      (take-while identity (iterate solution-iterator first-solution)))))
 
-(defn- make-counter "Makes counter starting from n" [n] 
+(defn- make-counter "Makes counter starting from n" [n]
   (let [ctr (atom (dec n))]
-    (memoize (fn [x] (swap! ctr inc))))) 
+    (memoize (fn [x] (swap! ctr inc)))))
 
 (defrecord Not [literal])
 (def ! ->Not)
@@ -152,12 +152,12 @@
 (defn- make-id-generator []
   (let [id (make-counter 1)]
     (fn [x]
-      (cond 
+      (cond
         (instance? Not x) (- (id (:literal x)))
-        :else (id x)))))        
+        :else (id x)))))
 
 (defn- all-literals [clauses]
-  (into [] (comp 
+  (into [] (comp
              (mapcat (fn [clause] (if (constraint? clause) (:literals clause) clause)))
              (map (fn [l] (if (not? l) (:literal l) l)))
              (distinct))
@@ -183,7 +183,7 @@
 
 (s/fdef solve-symbolic-cnf
         :args (s/cat :clauses (s/coll-of (s/or :clause ::symbolic-clause
-                                               :constraint ::constraint) 
+                                               :constraint ::constraint)
                                          :into ()))
               :timeout (s/? pos-int?)
         :ret (s/nilable ::symbolic-clause))
@@ -336,7 +336,7 @@
                    [[(negate imp-v) (negate v1) v2]
                     [imp-v v1]
                     [imp-v (negate v2)]])]))
-  
+
   Iff
   (encode-cnf [this]
     (let [literal1 (:literal1 this),
@@ -349,7 +349,7 @@
                     [iff-v (negate v1) (negate v2)]
                     [iff-v v1 v2]
                     [(negate iff-v) (negate v1) v2]])])))
-  
+
 (defn formula->cnf [wff]
   (let [[v clauses] (encode-cnf wff)]
     (conj clauses [v])))
